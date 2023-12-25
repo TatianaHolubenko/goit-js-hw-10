@@ -1,20 +1,24 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
+
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
-const myInput = document.querySelector('#datetime-picker');
-const startButton = document.querySelector('[data-start]');
-const dataDays = document.querySelector('[data-days]');
-const dataHours = document.querySelector('[data-hours]');
-const dataMinutes = document.querySelector('[data-minutes]');
-const dataSeconds = document.querySelector('[data-seconds]');
+const refs = {
+  myInput: document.querySelector('#datetime-picker'),
+  startButton: document.querySelector('[data-start]'),
+  dataDays: document.querySelector('[data-days]'),
+  dataHours: document.querySelector('[data-hours]'),
+  dataMinutes: document.querySelector('[data-minutes]'),
+  dataSeconds: document.querySelector('[data-seconds]'),
+};
 
-startButton.addEventListener('click', count);
+refs.startButton.addEventListener('click', counter);
 
 const TIMER_DELAY = 1000;
 
 let userSelectedDate = '';
+refs.startButton.disabled = true;
 
 //опції до бібліотеки flatpickr
 const options = {
@@ -23,23 +27,23 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    // console.log(selectedDates[0]);
-    if (selectedDates[0] < new Date()) {
+    userSelectedDate = selectedDates[0];
+
+    if (userSelectedDate.getTime() < Date.now()) {
       //Бібліотека iziToast
       iziToast.error({
         title: 'Error',
         message: 'Please choose a date in the future',
         position: 'topRight',
       });
-      startButton.disabled = true;
+      refs.startButton.disabled = true;
     } else {
-      userSelectedDate = selectedDates[0];
-      startButton.disabled = false;
+      refs.startButton.disabled = false;
     }
   },
 };
 //Бібліотека flatpickr
-const fp = flatpickr(myInput, options);
+const fp = flatpickr(refs.myInput, options);
 
 function convertMs(ms) {
   // Number of milliseconds per unit of time
@@ -64,4 +68,29 @@ console.log(convertMs(2000)); // {days: 0, hours: 0, minutes: 0, seconds: 2}
 console.log(convertMs(140000)); // {days: 0, hours: 0, minutes: 2, seconds: 20}
 console.log(convertMs(24140000)); // {days: 0, hours: 6 minutes: 42, seconds: 20}
 
-function count() {}
+function counter() {
+  const intervalTime = setInterval(() => {
+    const difference = userSelectedDate.getTime() - Date.now();
+    const { days, hours, minutes, seconds } = convertMs(difference);
+
+    refs.startButton.disabled = true;
+    refs.myInput.disabled = true;
+
+    if (difference <= 0) {
+      clearInterval(intervalTime);
+      this.intervalTime = null;
+
+      refs.startButton.disabled = true;
+      refs.myInput.disabled = false;
+    } else {
+      refs.dataDays.textContent = addLeadingZero(days);
+      refs.dataHours.textContent = addLeadingZero(hours);
+      refs.dataMinutes.textContent = addLeadingZero(minutes);
+      refs.dataSeconds.textContent = addLeadingZero(seconds);
+    }
+  }, TIMER_DELAY);
+}
+
+function addLeadingZero(value) {
+  return value.toString().padStart(2, '0');
+}
